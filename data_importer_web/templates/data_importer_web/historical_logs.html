@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historical Import Logs</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px; /* Rounded corners */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px; /* Max width for readability */
+            box-sizing: border-box;
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+        .date-filter {
+            background-color: #e8f0fe; /* Light blue background for filter box */
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px; /* Space between elements */
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .date-filter form {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            width: 100%; /* Make form take full width of its parent */
+        }
+        .date-filter label {
+            font-weight: bold;
+            color: #2980b9; /* Darker blue text */
+            font-size: 1.1em;
+        }
+        .date-filter input[type="date"] {
+            padding: 10px;
+            border: 1px solid #a7d9f7; /* Light blue border */
+            border-radius: 8px;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s ease-in-out;
+            max-width: 180px; /* Constrain width */
+        }
+        .date-filter input[type="date"]:focus {
+            border-color: #3498db; /* Blue on focus */
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        .date-filter button {
+            padding: 10px 25px;
+            background-image: linear-gradient(to right, #3498db, #2980b9); /* Blue gradient */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .date-filter button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .date-filter a.button-link { /* Specific style for the 'Show All' link as a button */
+            padding: 10px 15px;
+            background-color: #bdc3c7; /* Gray */
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center text if only one element */
+        }
+        .date-filter a.button-link:hover {
+            background-color: #95a5a6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .logs-section {
+            margin-top: 30px;
+            overflow-x: auto; /* Enable horizontal scrolling for tables */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border-radius: 8px;
+            overflow: hidden; /* Ensures rounded corners on table */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 0.9em;
+        }
+        th {
+            background-color: #f8f8f8;
+            color: #555;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+        tbody tr:hover {
+            background-color: #f0f8ff; /* Light blue on hover */
+        }
+        pre {
+            white-space: pre-wrap; /* Wrap long messages */
+            word-wrap: break-word; /* Break words for long lines */
+            font-size: 0.85em;
+            line-height: 1.5;
+            color: #555;
+            background-color: #fefefe;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #f0f0f0;
+            max-height: 150px; /* Limit height of log message box */
+            overflow-y: auto; /* Enable scrolling for long messages */
+        }
+        .no-logs-message {
+            text-align: center;
+            padding: 30px;
+            font-size: 1.1em;
+            color: #777;
+        }
+        .back-link {
+            display: block; /* Make it a block element to control its alignment */
+            text-align: center; /* Center the text */
+            margin-top: 30px;
+            font-size: 1.1em;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .date-filter form { /* Apply flex properties to the form directly */
+                flex-direction: column;
+                align-items: stretch; /* Stretch items to fill width */
+            }
+            .date-filter input[type="date"],
+            .date-filter button,
+            .date-filter a.button-link { /* Target both button and link */
+                width: 100%;
+                box-sizing: border-box; /* Include padding and border in the element's total width and height */
+            }
+            th, td {
+                padding: 10px;
+                font-size: 0.85em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Logs History</h1>
+
+        <div class="date-filter">
+            <form method="GET" action="{% url 'historical_logs' %}">
+                <label for="log_date">Select Date:</label>
+                <input type="date" id="log_date" name="log_date" value="{{ selected_date|default:'' }}">
+                <button type="submit">Filter Logs</button>
+                <a href="{% url 'historical_logs' %}" class="button-link">Show All</a>
+            </form>
+        </div>
+        
+        <!-- The back-link is placed inside the container for better overall centering -->
+        <a href="{% url 'import_emails_view' %}" class="back-link">← Back to Live Log</a>
+        
+
+        <div class="logs-section">
+            <h2>Logs for {% if selected_date %}{{ selected_date }}{% else %}All Dates{% endif %}</h2>
+
+            {% if logs %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Level</th>
+                            <th>Message</th>
+                            <th>Email UID</th>
+                            <th>Subject</th>
+                            <th>Sender</th>
+                            <th>Received Time</th>
+                            <th>Attachments</th>
+                            <th>Last Attachment Name</th>
+                            <th>Size (KB)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ log.level }}</td>
+                            <td><pre>{{ log.message }}</pre></td>
+                            <td>{{ log.email_uid|default:"-" }}</td>
+                            <td>{{ log.email_subject|default:"-" }}</td>
+                            <td>{{ log.email_sender|default:"-" }}</td>
+                            <td>{{ log.email_received_time|date:"Y-m-d H:i:s"|default:"-" }}</td>
+                            <td>{{ log.attachment_count|default:"-" }}</td>
+                            <td>{{ log.last_attachment_name|default:"-" }}</td>
+                            <td>{{ log.last_attachment_size_kb|floatformat:2|default:"-" }}</td>
+                            <td>{{ log.process_status|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-logs-message">No logs found for the selected criteria.</p>
+            {% endif %}
+        </div>
+
+        
+    </div>
+</body>
+</html>
