@@ -1799,3 +1799,99 @@ django.urls.exceptions.NoReverseMatch: Reverse for 'historical_logs' not found. 
 2025-06-18 14:45:26,405 - INFO - root - C:\Users\tamilarasans\Desktop\mail_web - Copy-Backup - Copy-1\data_importer_web\views.py:413 - --- Finished Processing Email UID 116 ---
 2025-06-18 14:45:26,648 - INFO - root - C:\Users\tamilarasans\Desktop\mail_web - Copy-Backup - Copy-1\data_importer_web\views.py:422 - Logged out from email server. Process finished.
 2025-06-18 14:45:26,695 - INFO - django.server - C:\Users\tamilarasans\Desktop\mail_web\venv\lib\site-packages\django\core\servers\basehttp.py:213 - "POST / HTTP/1.1" 200 8270
+2025-06-21 15:12:50,769 - INFO - django.utils.autoreload - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\utils\autoreload.py:667 - Watching for file changes with StatReloader
+2025-06-21 15:18:57,797 - INFO - django.utils.autoreload - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\utils\autoreload.py:667 - Watching for file changes with StatReloader
+2025-06-21 15:19:01,721 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET / HTTP/1.1" 200 6521
+2025-06-21 15:19:02,229 - WARNING - django.request - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\utils\log.py:248 - Not Found: /favicon.ico
+2025-06-21 15:19:02,230 - WARNING - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET /favicon.ico HTTP/1.1" 404 2746
+2025-06-21 15:19:12,065 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET / HTTP/1.1" 200 6521
+2025-06-21 15:19:20,812 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET /logs/ HTTP/1.1" 200 576718
+2025-06-21 15:19:22,998 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET / HTTP/1.1" 200 6521
+2025-06-21 15:20:04,339 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:54 - Attachments will be saved to: 'C:\Users\tamilarasans\Desktop\mail_web\downloads'
+2025-06-21 15:20:04,348 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:59 - No attachment filter applied.
+2025-06-21 15:20:04,353 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:82 - Loaded 78 UIDs from 'C:\Users\tamilarasans\Desktop\mail task\Mail_automation\processed_uids.txt'.
+2025-06-21 15:20:04,355 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:292 - 
+--- Email Import Process Initiated ---
+2025-06-21 15:20:05,809 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:103 - Connected to 'imap.gmail.com' label 'TRAIL'.
+2025-06-21 15:20:06,072 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:119 - Found 122 emails in mailbox.
+2025-06-21 15:20:06,318 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:326 - Latest email: Subject: 'sdhyw43534e7y4gfr', Sender: 'lge <leapge2025@gmail.com>'
+2025-06-21 15:20:06,321 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:333 - Processing new email UID 123.
+2025-06-21 15:20:07,580 - WARNING - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:382 - File 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02.xlsx' exists. Saving as 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02_31.xlsx'.
+2025-06-21 15:20:07,587 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:391 - Downloaded: 'TN-DEV-DVKM_02.xlsx' (Size: 205.25 KB)
+2025-06-21 15:20:07,591 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:163 - Processing Excel: 'TN-DEV-DVKM_02_31.xlsx'
+2025-06-21 15:20:08,401 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:195 - Generated table name: 'excel_data_tn_dev_dvkm_02_31_20250621152008'.
+2025-06-21 15:20:08,404 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:205 - Creating table 'excel_data_tn_dev_dvkm_02_31_20250621152008'.
+2025-06-21 15:20:08,438 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:209 - Table 'excel_data_tn_dev_dvkm_02_31_20250621152008' created successfully.
+2025-06-21 15:20:13,587 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:264 - Inserted 4031 rows into 'excel_data_tn_dev_dvkm_02_31_20250621152008'.
+2025-06-21 15:20:13,590 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:266 - Finished inserting data from 'TN-DEV-DVKM_02_31.xlsx'.
+2025-06-21 15:20:13,595 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:406 - Total attachments processed: 1
+2025-06-21 15:20:13,600 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:413 - --- Finished Processing Email UID 123 ---
+2025-06-21 15:20:13,839 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:422 - Logged out from email server. Process finished.
+2025-06-21 15:20:13,844 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "POST / HTTP/1.1" 200 8519
+2025-06-21 15:22:08,124 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:54 - Attachments will be saved to: 'C:\Users\tamilarasans\Desktop\mail_web\downloads'
+2025-06-21 15:22:08,129 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:59 - No attachment filter applied.
+2025-06-21 15:22:08,133 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:82 - Loaded 79 UIDs from 'C:\Users\tamilarasans\Desktop\mail task\Mail_automation\processed_uids.txt'.
+2025-06-21 15:22:08,136 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:292 - 
+--- Email Import Process Initiated ---
+2025-06-21 15:22:09,323 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:103 - Connected to 'imap.gmail.com' label 'TRAIL'.
+2025-06-21 15:22:09,582 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:119 - Found 123 emails in mailbox.
+2025-06-21 15:22:09,846 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:326 - Latest email: Subject: 'deryh4325t3w4y3', Sender: 'lge <leapge2025@gmail.com>'
+2025-06-21 15:22:09,855 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:333 - Processing new email UID 124.
+2025-06-21 15:22:10,772 - WARNING - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:382 - File 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02.xlsx' exists. Saving as 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02_32.xlsx'.
+2025-06-21 15:22:10,780 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:391 - Downloaded: 'TN-DEV-DVKM_02.xlsx' (Size: 205.25 KB)
+2025-06-21 15:22:10,784 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:163 - Processing Excel: 'TN-DEV-DVKM_02_32.xlsx'
+2025-06-21 15:22:10,812 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:195 - Generated table name: 'excel_data_tn_dev_dvkm_02_32_20250621152210'.
+2025-06-21 15:22:10,817 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:205 - Creating table 'excel_data_tn_dev_dvkm_02_32_20250621152210'.
+2025-06-21 15:22:10,831 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:209 - Table 'excel_data_tn_dev_dvkm_02_32_20250621152210' created successfully.
+2025-06-21 15:22:15,621 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:264 - Inserted 4031 rows into 'excel_data_tn_dev_dvkm_02_32_20250621152210'.
+2025-06-21 15:22:15,623 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:266 - Finished inserting data from 'TN-DEV-DVKM_02_32.xlsx'.
+2025-06-21 15:22:15,627 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:406 - Total attachments processed: 1
+2025-06-21 15:22:15,630 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:413 - --- Finished Processing Email UID 124 ---
+2025-06-21 15:22:15,887 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:422 - Logged out from email server. Process finished.
+2025-06-21 15:22:15,890 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "POST / HTTP/1.1" 200 8517
+2025-06-21 15:28:12,196 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:54 - Attachments will be saved to: 'C:\Users\tamilarasans\Desktop\mail_web\downloads'
+2025-06-21 15:28:12,203 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:59 - No attachment filter applied.
+2025-06-21 15:28:12,209 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:82 - Loaded 80 UIDs from 'C:\Users\tamilarasans\Desktop\mail task\Mail_automation\processed_uids.txt'.
+2025-06-21 15:28:12,212 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:292 - 
+--- Email Import Process Initiated ---
+2025-06-21 15:28:13,767 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:103 - Connected to 'imap.gmail.com' label 'TRAIL'.
+2025-06-21 15:28:14,013 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:119 - Found 124 emails in mailbox.
+2025-06-21 15:28:14,308 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:326 - Latest email: Subject: 'fgfdsfg[poiuytrewasdfghfgbfddbhrbh', Sender: 'lge <leapge2025@gmail.com>'
+2025-06-21 15:28:14,312 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:333 - Processing new email UID 125.
+2025-06-21 15:28:15,006 - WARNING - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:382 - File 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02.xlsx' exists. Saving as 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-DEV-DVKM_02_33.xlsx'.
+2025-06-21 15:28:15,014 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:391 - Downloaded: 'TN-DEV-DVKM_02.xlsx' (Size: 205.25 KB)
+2025-06-21 15:28:15,019 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:163 - Processing Excel: 'TN-DEV-DVKM_02_33.xlsx'
+2025-06-21 15:28:15,044 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:195 - Generated table name: 'excel_data_tn_dev_dvkm_02_33_20250621152815'.
+2025-06-21 15:28:15,046 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:205 - Creating table 'excel_data_tn_dev_dvkm_02_33_20250621152815'.
+2025-06-21 15:28:15,070 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:209 - Table 'excel_data_tn_dev_dvkm_02_33_20250621152815' created successfully.
+2025-06-21 15:28:22,295 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:264 - Inserted 4031 rows into 'excel_data_tn_dev_dvkm_02_33_20250621152815'.
+2025-06-21 15:28:22,299 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:266 - Finished inserting data from 'TN-DEV-DVKM_02_33.xlsx'.
+2025-06-21 15:28:22,304 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:406 - Total attachments processed: 1
+2025-06-21 15:28:22,312 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:413 - --- Finished Processing Email UID 125 ---
+2025-06-21 15:28:22,560 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:422 - Logged out from email server. Process finished.
+2025-06-21 15:28:22,566 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "POST / HTTP/1.1" 200 8536
+2025-06-21 15:30:16,699 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET /logs/ HTTP/1.1" 200 618964
+2025-06-21 15:30:23,872 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET /logs/?log_date=2025-06-21 HTTP/1.1" 200 50610
+2025-06-21 16:03:05,023 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET / HTTP/1.1" 200 6521
+2025-06-23 09:31:48,181 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "GET / HTTP/1.1" 200 6521
+2025-06-23 12:19:15,948 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:54 - Attachments will be saved to: 'C:\Users\tamilarasans\Desktop\mail_web\downloads'
+2025-06-23 12:19:16,030 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:59 - No attachment filter applied.
+2025-06-23 12:19:16,039 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:82 - Loaded 81 UIDs from 'C:\Users\tamilarasans\Desktop\mail task\Mail_automation\processed_uids.txt'.
+2025-06-23 12:19:16,042 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:292 - 
+--- Email Import Process Initiated ---
+2025-06-23 12:19:17,526 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:103 - Connected to 'imap.gmail.com' label 'TRAIL'.
+2025-06-23 12:19:17,778 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:119 - Found 125 emails in mailbox.
+2025-06-23 12:19:18,029 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:326 - Latest email: Subject: '23234234', Sender: 'lge <leapge2025@gmail.com>'
+2025-06-23 12:19:18,032 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:333 - Processing new email UID 126.
+2025-06-23 12:19:19,649 - WARNING - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:382 - File 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-CBE-BOGM_01.xlsx' exists. Saving as 'C:/Users/tamilarasans/Desktop/mail_web/downloads\TN-CBE-BOGM_01_1.xlsx'.
+2025-06-23 12:19:19,672 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:391 - Downloaded: 'TN-CBE-BOGM_01.xlsx' (Size: 1719.71 KB)
+2025-06-23 12:19:19,676 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:163 - Processing Excel: 'TN-CBE-BOGM_01_1.xlsx'
+2025-06-23 12:19:19,756 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:195 - Generated table name: 'excel_data_tn_cbe_bogm_01_1_20250623121919'.
+2025-06-23 12:19:19,759 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:205 - Creating table 'excel_data_tn_cbe_bogm_01_1_20250623121919'.
+2025-06-23 12:19:19,789 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:209 - Table 'excel_data_tn_cbe_bogm_01_1_20250623121919' created successfully.
+2025-06-23 12:19:28,496 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:264 - Inserted 4031 rows into 'excel_data_tn_cbe_bogm_01_1_20250623121919'.
+2025-06-23 12:19:28,499 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:266 - Finished inserting data from 'TN-CBE-BOGM_01_1.xlsx'.
+2025-06-23 12:19:28,508 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:406 - Total attachments processed: 1
+2025-06-23 12:19:28,511 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:413 - --- Finished Processing Email UID 126 ---
+2025-06-23 12:19:28,750 - INFO - root - C:\Users\tamilarasans\Desktop\mail task\mail_automation\data_importer_web\views.py:422 - Logged out from email server. Process finished.
+2025-06-23 12:19:28,754 - INFO - django.server - C:\Users\tamilarasans\AppData\Roaming\Python\Python310\site-packages\django\core\servers\basehttp.py:213 - "POST / HTTP/1.1" 200 8504
