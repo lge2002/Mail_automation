@@ -1,11 +1,10 @@
 import imaplib
 import email
 import os
-import re
 import logging
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from email.utils import parsedate_to_datetime
 import shutil
 import tempfile
@@ -19,16 +18,18 @@ from django.db import transaction, IntegrityError, connection
 from django.utils import timezone
 from django.conf import settings
 import pytz
-from .models import LogEntry
+from .models import LogEntry, ExcelDataEntry # Ensure ExcelDataEntry is imported and defined in models.py
+import string # Import string module for character sets
+import math # Import math for isnan check
 
 # Configure logging at a basic level
+# Get the root logger
 root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO) # Keep INFO for general output, DEBUG for more detail
-# If you want truly basic output, you might remove handlers and just use print() for quick debugging,
-# but keeping logging is good practice.
+# Set the level for the root logger to INFO. This will affect all handlers unless overridden.
+root_logger.setLevel(logging.INFO)
 
 # Define permanent save directory for attachments
-PERMANENT_SAVE_DIR = r'C:/Users/tamilarasans/Desktop/mail_web/downloads'
+PERMANENT_SAVE_DIR = os.path.join(settings.BASE_DIR, 'downloads') # Safer path handling
 
 # File to track processed email UIDs
 PROCESSED_UIDS_FILE = 'processed_uids.txt'
@@ -125,155 +126,258 @@ class EmailProcessorLogic:
             root_logger.error(f"Error fetching latest email UID: {e}")
             return None
 
-    def _sanitize_column_name(self, col_name):
-        """Sanitizes column names for SQL compatibility."""
-        sanitized = re.sub(r'[^\w]+', '_', str(col_name).strip())
-        if re.match(r'^\d', sanitized):
-            sanitized = '_' + sanitized
-        sanitized = sanitized[:50] # Truncate to avoid overly long names
-        reserved_keywords = {'ORDER', 'GROUP', 'SELECT', 'FROM', 'WHERE', 'LIMIT', 'COUNT', 'TABLE', 'COLUMN', 'PRIMARY', 'KEY', 'AUTO_INCREMENT'}
-        if sanitized.upper() in reserved_keywords:
-            sanitized = '_' + sanitized
-        return sanitized.lower()
+    def _format_timestamp_for_output(self, timestamp_value):
+        """
+        Formates a timestamp value (can be datetime, pd.Timestamp, string, int/float epoch)
+        into a "YYYY-MM-DD HH:MM:SS" string.
+        """
+        if pd.isna(timestamp_value) or timestamp_value is None: # Handle NaN and None explicitly
+            return None
+        
+        if isinstance(timestamp_value, datetime):
+            return timestamp_value.strftime("%Y-%m-%d %H:%M:%S")
+        
+        if isinstance(timestamp_value, pd.Timestamp):
+            return timestamp_value.to_pydatetime().strftime("%Y-%m-%d %H:%M:%S")
 
-    def _infer_mysql_type(self, value):
-        """Infers a suitable MySQL data type based on a sample value."""
-        if pd.isna(value):
-            return 'VARCHAR(255)' # Default for NaN/None
-        if isinstance(value, (int, np.integer)):
-            if -2147483648 <= value <= 2147483647:
-                return 'INT'
-            else:
-                return 'BIGINT'
-        elif isinstance(value, (float, np.floating)):
-            return 'DOUBLE'
-        elif isinstance(value, (datetime, pd.Timestamp)):
-            return 'DATETIME'
-        elif isinstance(value, bool):
-            return 'BOOLEAN'
-        else:
+        if isinstance(timestamp_value, str):
             try:
-                pd.to_datetime(value)
-                return 'DATETIME'
-            except (ValueError, TypeError):
-                return 'VARCHAR(255)' # Default for strings
+                # Try to parse ISO format first (e.g., '2025-05-01T00:10:00.000')
+                dt_object = datetime.fromisoformat(timestamp_value.replace('Z', '+00:00'))
+                return dt_object.strftime("%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                try:
+                    # Fallback to standard YYYY-MM-DD HH:MM:SS format
+                    dt_object = datetime.strptime(timestamp_value, "%Y-%m-%d %H:%M:%S")
+                    return dt_object.strftime("%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    root_logger.debug(f"Could not parse string datetime '{timestamp_value}'.")
+                    return None # Indicate parsing failure
+        
+        elif isinstance(timestamp_value, (int, float)):
+            try:
+                if timestamp_value > 1e12: # Heuristic for milliseconds epoch
+                    dt_object = datetime.fromtimestamp(timestamp_value / 1000)
+                else: # Assume seconds epoch
+                    dt_object = datetime.fromtimestamp(timestamp_value)
+                return dt_object.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                root_logger.debug(f"Could not parse numeric datetime '{timestamp_value}'.")
+                return None
+        else:
+            root_logger.debug(f"Unsupported datetime type: {type(timestamp_value)}")
+            return None
 
-    def _process_excel_file(self, file_path):
-        """Processes an Excel file to create a dynamic MySQL table and insert data."""
+    def _process_excel_file(self, file_path, email_uid=None):
+        """
+        Processes an Excel file, restructures data according to the provided logic,
+        and inserts it into the fixed ExcelDataEntry Django model.
+        """
         root_logger.info(f"Processing Excel: '{os.path.basename(file_path)}'")
 
         try:
-            # Read header and sample row to infer column names and types
-            header_and_sample_data_df = pd.read_excel(file_path, header=None, nrows=2)
+            # Step 1: Read the entire Excel file without a header, so all rows (including headers) are data.
+            raw_df = pd.read_excel(file_path, header=None)
 
-            if header_and_sample_data_df.empty or len(header_and_sample_data_df) < 2:
-                root_logger.warning(f"Excel file '{os.path.basename(file_path)}' is empty or too short. Skipping.")
+            if raw_df.empty:
+                root_logger.warning(f"Excel file '{os.path.basename(file_path)}' is empty. Skipping.")
                 return 0
 
-            excel_column_names = header_and_sample_data_df.iloc[0].tolist()
-            sample_row_for_types = header_and_sample_data_df.iloc[1]
-            column_definitions = {}
+            # The first row contains the multi-line headers
+            raw_header_row = raw_df.iloc[0]
+            # The rest of the DataFrame contains the actual data
+            data_rows_df = raw_df.iloc[1:].copy()
 
-            # Sanitize column names and infer types
-            for i, col_name_raw in enumerate(excel_column_names):
-                sanitized_col_name = self._sanitize_column_name(col_name_raw)
-                original_sanitized_col_name = sanitized_col_name
-                count = 1
-                while sanitized_col_name in column_definitions: # Handle duplicate sanitized names
-                    sanitized_col_name = f"{original_sanitized_col_name}_{count}"
-                    count += 1
+            if data_rows_df.empty:
+                root_logger.warning(f"Data rows in Excel file '{os.path.basename(file_path)}' are empty. Skipping insertion.")
+                return 0
 
-                inferred_type = self._infer_mysql_type(sample_row_for_types.iloc[i])
-                column_definitions[sanitized_col_name] = inferred_type
-                root_logger.debug(f"Inferred: '{col_name_raw}' -> '{sanitized_col_name}' ({inferred_type})")
+            # This dictionary will map the Excel column index to a tuple (locno, model_field_name)
+            # or a special marker for the datetime column.
+            excel_col_idx_to_model_info = {}
 
-            # Generate dynamic table name
-            base_filename = os.path.splitext(os.path.basename(file_path))[0]
-            sanitized_base_filename = self._sanitize_column_name(base_filename)
-            timestamp_suffix = datetime.now().strftime("%Y%m%d%H%M%S")
-            table_name = f"excel_data_{sanitized_base_filename}_{timestamp_suffix}"
-            root_logger.info(f"Generated table name: '{table_name}'.")
+            # Define the mapping from cleaned Excel parameter descriptions to your model's field names
+            # This is CRUCIAL for the fixed schema approach. Add all expected parameters here.
+            # These keys MUST match the output of the cleaned_parameter_description logic below.
+            excel_param_to_model_field_map = {
+                "Outdoor Temp Average": "outdoor_temp",
+                "Wind Speed Average": "wind_speed",
+                "Nacelle Pos Average": "nacelle_pos",
+                "Active Power Average": "active_power",
+                "Grid Frequency Average": "frequency", # Corrected to match your DB column
+                # Add all other relevant Excel parameter descriptions and their corresponding model field names
+                # Example: "Another Parameter": "another_parameter_model_field"
+            }
 
-            # Create table SQL
-            columns_definition_string = ',\n'.join([f"`{col}` {col_type}" for col, col_type in column_definitions.items()])
-            create_table_sql = f"""
-CREATE TABLE `{table_name}` (
-id INT AUTO_INCREMENT PRIMARY KEY,
-{columns_definition_string}
-);
-"""
-            root_logger.info(f"Creating table '{table_name}'.")
-            with connection.cursor() as cursor:
-                try:
-                    cursor.execute(create_table_sql)
-                    root_logger.info(f"Table '{table_name}' created successfully.")
-                except Exception as e:
-                    root_logger.error(f"Error creating table '{table_name}': {e}")
-                    raise CommandError(f"Failed to create table '{table_name}': {e}")
+            source_filename = os.path.basename(file_path)
+
+            # Process the raw header row to build our column mapping
+            for col_idx, full_excel_header_str in raw_header_row.items():
+                if pd.isna(full_excel_header_str):
+                    root_logger.debug(f"Skipping empty header at column index {col_idx}.")
+                    continue
+
+                header_parts = str(full_excel_header_str).strip().split('\n')
+
+                # Identify the 'Local Time' column (based on the first two lines of the header)
+                if len(header_parts) >= 2 and header_parts[0].strip().lower() == 'local' and header_parts[1].strip().lower() == 'time':
+                    excel_col_idx_to_model_info[col_idx] = {'type': 'datetime_column'}
+                    root_logger.debug(f"Identified datetime column at index {col_idx}.")
+                elif len(header_parts) >= 3:
+                    # For data columns, extract locno and parameter description
+                    locno_raw = header_parts[1].strip()
+                    parameter_description_raw = header_parts[2].strip()
+
+                    # --- START NON-REGEX CLEANING LOGIC FOR parameter_description_raw ---
+                    cleaned_parameter_description = ""
+                    average_suffix = "Average"
+                    if average_suffix in parameter_description_raw:
+                        idx = parameter_description_raw.find(average_suffix)
+                        cleaned_parameter_description = parameter_description_raw[:idx + len(average_suffix)].strip()
+                    else:
+                        temp_cleaned_chars = []
+                        valid_chars = string.ascii_letters + string.digits + ' ' # Only keep alphanumeric and space
+                        for char in parameter_description_raw:
+                            if char in valid_chars:
+                                temp_cleaned_chars.append(char)
+                        
+                        temp_string = "".join(temp_cleaned_chars)
+                        cleaned_parameter_description = " ".join(temp_string.split()).strip() # Normalize whitespace
+                    # --- END NON-REGEX CLEANING LOGIC ---
+                    
+                    # --- START NON-REGEX LOCNO EXTRACTION/VALIDATION ---
+                    locno = None
+                    # Example: Assuming locno is like "K123"
+                    if locno_raw.startswith('K') and len(locno_raw) > 1 and locno_raw[1:].isdigit():
+                        locno = locno_raw
+                    # --- END NON-REGEX LOCNO EXTRACTION/VALIDATION ---
+
+                    model_field_name = excel_param_to_model_field_map.get(cleaned_parameter_description)
+
+                    if locno and model_field_name:
+                        excel_col_idx_to_model_info[col_idx] = {
+                            'type': 'data_column',
+                            'locno': locno,
+                            'model_field': model_field_name
+                        }
+                        root_logger.debug(f"Mapped Col Index {col_idx} (Excel Header: '{full_excel_header_str}') to locno='{locno}', model_field='{model_field_name}'.")
+                    else:
+                        root_logger.debug(f"Skipping Excel header '{full_excel_header_str}' (Col Index: {col_idx}): Unrecognized locno ('{locno_raw}') or parameter ('{cleaned_parameter_description}').")
+                else:
+                    root_logger.debug(f"Skipping Excel header '{full_excel_header_str}' (Col Index: {col_idx}): Header not in expected format (needs at least 3 parts for data columns).")
+
+
+            # Dictionary to aggregate data for each (datetime, locno) combination before creating model instances.
+            # Key: (datetime_object, locno_str)
+            # Value: A dictionary of model field_name: value pairs for that combination.
+            aggregated_records = {}
+
+            # Iterate through each row of the data DataFrame (actual data, excluding the header row)
+            for index, row in data_rows_df.iterrows():
+                current_row_datetime = None
+
+                # First pass: find and parse the datetime column for the current row
+                datetime_col_idx = None
+                for col_idx, info in excel_col_idx_to_model_info.items():
+                    if info['type'] == 'datetime_column':
+                        datetime_col_idx = col_idx
+                        break
+                
+                if datetime_col_idx is not None and datetime_col_idx in row:
+                    raw_time_value = row[datetime_col_idx]
+                    formatted_time_str = self._format_timestamp_for_output(raw_time_value)
+
+                    if formatted_time_str:
+                        # Convert back to datetime object for Django's DateTimeField
+                        try:
+                            current_row_datetime = datetime.strptime(formatted_time_str, "%Y-%m-%d %H:%M:%S")
+                            # Make datetime timezone-aware if USE_TZ is True in settings
+                            if getattr(settings, 'USE_TZ', False):
+                                # Ensure current_row_datetime is naive before making it aware
+                                if current_row_datetime.tzinfo is not None:
+                                    # Convert to UTC naive before making aware to desired timezone
+                                    current_row_datetime = current_row_datetime.astimezone(pytz.utc).replace(tzinfo=None)
+                                # Make aware to Django's default timezone or current timezone
+                                current_row_datetime = timezone.make_aware(current_row_datetime, timezone.get_current_timezone())
+                        except ValueError:
+                            current_row_datetime = None
+                            root_logger.warning(f"Row {index+1}: Formatted datetime '{formatted_time_str}' could not be converted to datetime object.")
+                    else:
+                        root_logger.warning(f"Row {index+1}: Could not format datetime from '{raw_time_value}'. Skipping row data for this timestamp.")
+                
+                if current_row_datetime is None:
+                    root_logger.debug(f"Skipping row {index+1} due to unparsable datetime.")
+                    continue # Skip this entire row if datetime couldn't be parsed
+
+                # Second pass: populate data for each locno and parameter from this row
+                for col_idx, cell_value in row.items():
+                    col_info = excel_col_idx_to_model_info.get(col_idx)
+
+                    if col_info and col_info['type'] == 'data_column':
+                        locno = col_info['locno']
+                        model_field = col_info['model_field']
+
+                        # Initialize entry for this (datetime, locno) if not present
+                        record_key = (current_row_datetime, locno)
+                        if record_key not in aggregated_records:
+                            aggregated_records[record_key] = {
+                                'datetime': current_row_datetime,
+                                'locno': locno,
+                                # 'source_filename': source_filename,
+                                # 'source_email_uid': email_uid,
+                            }
+                            # Initialize all potential data fields to None
+                            # This ensures all fields in the model are always present in the dict
+                            for field_name_map in excel_param_to_model_field_map.values():
+                                if field_name_map not in aggregated_records[record_key]:
+                                    aggregated_records[record_key][field_name_map] = None
+
+                        # Assign the value, handling NaN and converting numpy types
+                        if pd.isna(cell_value):
+                            aggregated_records[record_key][model_field] = None
+                        else:
+                            # Convert numpy types to native Python types for Django ORM
+                            if isinstance(cell_value, (np.integer, np.int64)):
+                                aggregated_records[record_key][model_field] = int(cell_value)
+                            elif isinstance(cell_value, (np.floating, np.float64)):
+                                aggregated_records[record_key][model_field] = float(cell_value)
+                            else:
+                                aggregated_records[record_key][model_field] = cell_value
+
+            # Convert aggregated data into a list of ExcelDataEntry objects
+            excel_data_entries = []
+            for record_data in aggregated_records.values():
+                excel_data_entries.append(ExcelDataEntry(**record_data))
 
             total_rows_inserted = 0
-            # Read all data, skipping the header rows
-            data_df_raw = pd.read_excel(file_path, header=None, skiprows=2)
-
-            if data_df_raw.empty:
-                root_logger.warning(f"Data DataFrame is empty. Skipping insertion.")
-                return 0
-
-            if len(data_df_raw.columns) != len(column_definitions):
-                root_logger.error(f"Column count mismatch. Expected {len(column_definitions)}, got {len(data_df_raw.columns)}. Skipping insertion.")
-                return 0
-
-            # Rename columns based on sanitized names
-            new_column_names = list(column_definitions.keys())
-            rename_mapping = {i: col_name for i, col_name in enumerate(new_column_names)}
-            data_df = data_df_raw.rename(columns=rename_mapping)
-            records_to_insert = data_df.to_dict(orient='records')
-
-            if not records_to_insert:
-                root_logger.warning(f"No records to insert after processing. Skipping.")
-                return 0
-
-            # Prepare INSERT SQL
-            columns_for_insert = ", ".join([f"`{col}`" for col in column_definitions.keys()])
-            placeholders = ", ".join(["%s"] * len(column_definitions))
-            insert_sql = f"INSERT INTO `{table_name}` ({columns_for_insert}) VALUES ({placeholders})"
-
-            with connection.cursor() as cursor:
-                rows_inserted_count = 0
-                for record in records_to_insert:
-                    values = []
-                    for col_name in column_definitions.keys():
-                        val = record.get(col_name) # Handle potential missing columns in records
-                        if isinstance(val, (np.integer, np.int64)):
-                            values.append(int(val))
-                        elif isinstance(val, (np.floating, np.float64)):
-                            values.append(float(val))
-                        elif isinstance(val, pd.Timestamp):
-                            values.append(val.to_pydatetime())
-                        elif pd.isna(val):
-                            values.append(None)
-                        else:
-                            values.append(val)
-
+            if excel_data_entries:
+                root_logger.info(f"Attempting to insert {len(excel_data_entries)} restructured records into ExcelDataEntry.")
+                with transaction.atomic(): # Ensures all or nothing for the batch
                     try:
-                        cursor.execute(insert_sql, values)
-                        rows_inserted_count += 1
+                        # Use bulk_create for efficiency. ignore_conflicts=True will skip existing unique records.
+                        # This means if (datetime, locno, source_filename) is a duplicate, it won't be inserted.
+                        # Django 2.2+ supports ignore_conflicts.
+                        ExcelDataEntry.objects.bulk_create(excel_data_entries, ignore_conflicts=True)
+                        total_rows_inserted = len(excel_data_entries) # bulk_create returns None on success, assume all if no error
+                        root_logger.info(f"Successfully inserted {total_rows_inserted} rows into ExcelDataEntry.")
+                    except IntegrityError as e:
+                        root_logger.error(f"Integrity Error during bulk_create (e.g., duplicate entry, check unique_together constraint in model): {e}")
+                        # Re-raise to ensure transaction rollback if not handled by ignore_conflicts
+                        raise 
                     except Exception as e:
-                        root_logger.error(f"Error inserting row into '{table_name}': {e} - Data: {record}")
+                        root_logger.error(f"General error during bulk_create: {e}")
+                        # Re-raise to ensure transaction rollback
+                        raise 
 
-            root_logger.info(f"Inserted {rows_inserted_count} rows into '{table_name}'.")
-            total_rows_inserted = rows_inserted_count
-            root_logger.info(f"Finished inserting data from '{os.path.basename(file_path)}'.")
+            root_logger.info(f"Finished processing and inserting data from '{os.path.basename(file_path)}'.")
             return total_rows_inserted
 
         except pd.errors.EmptyDataError:
             root_logger.error(f"Error: Excel file '{os.path.basename(file_path)}' is empty or corrupted.")
             return 0
-        except CommandError:
-            raise # Re-raise CommandError as it's a specific Django error
         except Exception as e:
-            root_logger.error(f"Unexpected error during Excel processing for '{os.path.basename(file_path)}': {e}")
-            raise # Re-raise other unexpected errors
+            root_logger.exception(f"Unexpected error during Excel processing for '{os.path.basename(file_path)}': {e}")
+            raise # Re-raise other unexpected errors to be caught higher up
 
     def download_attachments(self):
         """Connects to email, fetches latest email, and processes attachments."""
@@ -307,6 +411,7 @@ id INT AUTO_INCREMENT PRIMARY KEY,
             self.latest_email_uid = latest_uid_str
 
             # Fetch header for basic info before deciding to process
+            # Use 'RFC822.HEADER' for full header or 'BODY.PEEK[HEADER]' for just headers without marking as read
             result, msg_header_data = mail.uid('fetch', latest_uid_str.encode('utf-8'), '(BODY.PEEK[HEADER])')
 
             if result == 'OK' and msg_header_data and msg_header_data[0]:
@@ -333,6 +438,7 @@ id INT AUTO_INCREMENT PRIMARY KEY,
                 root_logger.info(f"Processing new email UID {latest_uid_str}.")
                 self.latest_email_status_in_run = "NEW_EMAIL_PROCESSED" # Simplified status
 
+                # Fetch the full message only if it's a new email
                 result, msg_full_data = mail.uid('fetch', latest_uid_str.encode('utf-8'), '(RFC822)')
                 if result != 'OK' or not msg_full_data or not msg_full_data[0]:
                     root_logger.warning(f"Failed to fetch full message for UID {latest_uid_str}.")
@@ -366,10 +472,10 @@ id INT AUTO_INCREMENT PRIMARY KEY,
                             continue
 
                         if self.attachment_keyword and self.attachment_keyword not in filename.lower():
-                            root_logger.debug(f"Skipping '{filename}': Filter keyword not found.")
+                            root_logger.debug(f"Skipping '{filename}': Filter keyword '{self.attachment_keyword}' not found in filename.")
                             continue
 
-                        # Handle duplicate filenames
+                        # Handle duplicate filenames by appending a counter
                         filepath = os.path.join(self.save_directory, filename)
                         base, ext = os.path.splitext(filename)
                         counter = 1
@@ -388,16 +494,20 @@ id INT AUTO_INCREMENT PRIMARY KEY,
                             attachments_found_count += 1
                             file_size_bytes = os.path.getsize(filepath)
                             file_size_kb = file_size_bytes / 1024
-                            root_logger.info(f"Downloaded: '{filename}' (Size: {file_size_kb:.2f} KB)")
+                            root_logger.info(f"Downloaded: '{os.path.basename(filepath)}' (Size: {file_size_kb:.2f} KB)") # Log actual saved name
 
-                            last_attachment_name = filename
+                            last_attachment_name = os.path.basename(filepath)
                             last_attachment_size_kb = file_size_kb
 
-                            # Process the downloaded Excel file
-                            self._process_excel_file(filepath)
+                            # Process the downloaded Excel file, passing the latest_email_uid
+                            rows_inserted = self._process_excel_file(filepath, email_uid=latest_uid_str)
+                            if rows_inserted > 0:
+                                root_logger.info(f"Successfully processed '{os.path.basename(filepath)}' and inserted {rows_inserted} data rows.")
+                            else:
+                                root_logger.info(f"No data rows inserted from '{os.path.basename(filepath)}'.")
 
                         except Exception as e:
-                            root_logger.error(f"Error processing attachment '{filename}': {e}")
+                            root_logger.error(f"Error processing attachment '{filename}': {e}", exc_info=True) # exc_info to log full traceback
 
                     self.total_attachments_processed = attachments_found_count
                     self.latest_attachment_name = last_attachment_name
@@ -414,8 +524,10 @@ id INT AUTO_INCREMENT PRIMARY KEY,
 
         except imaplib.IMAP4.error as e:
             root_logger.error(f"IMAP Error: {e}.")
+            self.latest_email_status_in_run = "IMAP_ERROR"
         except Exception as e:
             root_logger.exception(f"An unexpected error occurred: {e}")
+            self.latest_email_status_in_run = "UNEXPECTED_ERROR"
         finally:
             if mail:
                 mail.logout()
@@ -436,13 +548,16 @@ def import_emails_view(request):
     root_logger.addHandler(stream_handler)
     root_logger.setLevel(logging.INFO) # Ensure INFO level for this view's logging
 
+    # Log an initial message to the stream
+    root_logger.info(f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] Web import triggered.")
+
     try:
         if request.method == 'POST':
             action = request.POST.get('action')
             if action == 'start_import':
                 status_message = "Import process initiated..."
                 try:
-                    processor = EmailProcessorLogic() # Removed overwrite_existing=True if not explicitly needed
+                    processor = EmailProcessorLogic() 
                     processor.download_attachments()
 
                     # Simplified status message based on processor's final status
@@ -454,20 +569,23 @@ def import_emails_view(request):
                         status_message = "Import completed: No new emails found."
                     elif processor.latest_email_status_in_run == "FETCH_FAILED":
                         status_message = "Import failed: Could not fetch email data."
+                    elif processor.latest_email_status_in_run == "IMAP_ERROR":
+                        status_message = "Import failed: IMAP connection error."
+                    elif processor.latest_email_status_in_run == "UNEXPECTED_ERROR":
+                        status_message = "Import failed: An unexpected error occurred during email processing."
                     else:
                         status_message = "Import process completed with unknown status."
 
                 except Exception as e:
                     status_message = f"Error during import: {e}"
-                    root_logger.error(status_message) # No need for extra dict in basic view logging
-
-        # Get the captured log output
-        log_output_string = log_stream.getvalue()
+                    root_logger.error(status_message) 
 
     except Exception as e:
-        root_logger.error(f"An unhandled error occurred in the view: {e}")
-        log_output_string += f"\nERROR: An unhandled error occurred: {e}\n"
+        root_logger.error(f"An unhandled error occurred in the view: {e}", exc_info=True)
+        log_output_string += f"\nERROR: An unhandled error occurred in the view function: {e}\n"
     finally:
+        # Get the captured log output before removing handler
+        log_output_string = log_stream.getvalue()
         # Crucial: Remove the handler to prevent duplicate logs on subsequent requests
         root_logger.removeHandler(stream_handler)
         log_stream.close()
@@ -493,7 +611,8 @@ def historical_logs_view(request):
 
             # Make them timezone-aware if USE_TZ is True in settings
             if getattr(settings, 'USE_TZ', False):
-                start_of_day = timezone.make_aware(start_of_day, pytz.utc) # Assuming storage in UTC
+                # Ensure they are timezone-aware, typically UTC if stored as such
+                start_of_day = timezone.make_aware(start_of_day, pytz.utc) 
                 end_of_day = timezone.make_aware(end_of_day, pytz.utc)
 
             logs = logs.filter(timestamp__gte=start_of_day, timestamp__lte=end_of_day)
